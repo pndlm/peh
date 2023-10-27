@@ -11,23 +11,54 @@ import (
 	mobyclient "github.com/moby/moby/client"
 )
 
-type PehDockerClient struct {
-	Mobyclient *mobyclient.Client
+func (proj *Project) DockerClient() *mobyclient.Client {
+	if proj.mobyclient == nil {
+		mcli, err := mobyclient.NewClientWithOpts(mobyclient.FromEnv)
+		if err != nil {
+			panic(err)
+		}
+		proj.mobyclient = mcli
+	}
+	return proj.mobyclient
 }
 
-func MustGetPehDockerClient() *PehDockerClient {
-	mcli, err := mobyclient.NewClientWithOpts(mobyclient.FromEnv)
+func (proj *Project) DeleteExitedContainers() {
+	containers, err := proj.DockerClient().ContainerList(
+		context.TODO(),
+		dkrtypes.ContainerListOptions{
+			All: true,
+		},
+	)
 	if err != nil {
 		panic(err)
 	}
-	return &PehDockerClient{
-		Mobyclient: mcli,
+	for _, container := range containers {
+		if container.State == "exited" {
+			fmt.Fprintf(os.Stderr, "Removing %s\n", container.Labels["com.docker.swarm.service.name"])
+			err := proj.DockerClient().ContainerRemove(context.TODO(), container.ID, dkrtypes.ContainerRemoveOptions{})
+			if err != nil {
+				panic(err)
+			}
+		}
 	}
 }
 
-func (pehdkr *PehDockerClient) RunningServiceContainers(serviceName string) []dkrtypes.Container {
+func (proj *Project) GetServiceContainerShell(serviceName string) {
+	containers := proj.RunningServiceContainers(serviceName)
+	if len(containers) < 1 {
+		fmt.Fprintf(os.Stderr, "Service %s has no containers", serviceName)
+		return
+	}
+	if len(containers) > 1 {
+		fmt.Fprintf(os.Stderr, "Service %s has more than 1 container", serviceName)
+		return
+	}
+	proj.Passthru("docker", "exec", "-it", containers[0].ID, "/bin/bash")
+}
+
+func (proj *Project) RunningServiceContainers(serviceName string) []dkrtypes.Container {
 	matches := []dkrtypes.Container{}
-	containers, err := pehdkr.Mobyclient.ContainerList(context.TODO(), dkrtypes.ContainerListOptions{})
+	containers, err := proj.DockerClient().ContainerList(context.TODO(), dkrtypes.ContainerListOptions{})
 	if err != nil {
 		panic(err)
 	}
@@ -40,34 +71,35 @@ func (pehdkr *PehDockerClient) RunningServiceContainers(serviceName string) []dk
 	return matches
 }
 
-func (pehdkr *PehDockerClient) StopServiceContainers(serviceName string) {
-	containers := pehdkr.RunningServiceContainers(serviceName)
+// https://github.com/docker/cli/tree/master/cli/command/stack
+func (proj *Project) StackUp(composeFile string) {
+	proj.Passthru("docker", "stack", "up", "-c", composeFile, proj.Name)
+}
+
+func (proj *Project) StackDown() {
+	proj.Passthru("docker", "stack", "down", proj.Name)
+}
+
+func (proj *Project) StopServiceContainers(serviceName string) {
+	containers := proj.RunningServiceContainers(serviceName)
 	for _, container := range containers {
 		fmt.Fprintf(os.Stderr, "Stopping %s\n", container.Labels["com.docker.swarm.service.name"])
-		err := pehdkr.Mobyclient.ContainerStop(context.TODO(), container.ID, dkrcontainertypes.StopOptions{})
+		err := proj.DockerClient().ContainerStop(context.TODO(), container.ID, dkrcontainertypes.StopOptions{})
 		if err != nil {
 			panic(err)
 		}
 	}
 }
 
-func (pehdkr *PehDockerClient) DeleteExitedContainers() {
-	containers, err := pehdkr.Mobyclient.ContainerList(
-		context.TODO(),
-		dkrtypes.ContainerListOptions{
-			All: true,
-		},
-	)
-	if err != nil {
-		panic(err)
+func (proj *Project) TailServiceContainer(serviceName string) {
+	containers := proj.RunningServiceContainers(serviceName)
+	if len(containers) < 1 {
+		fmt.Fprintf(os.Stderr, "Service %s has no containers", serviceName)
+		return
 	}
-	for _, container := range containers {
-		if container.State == "exited" {
-			fmt.Fprintf(os.Stderr, "Removing %s\n", container.Labels["com.docker.swarm.service.name"])
-			err := pehdkr.Mobyclient.ContainerRemove(context.TODO(), container.ID, dkrtypes.ContainerRemoveOptions{})
-			if err != nil {
-				panic(err)
-			}
-		}
+	if len(containers) > 1 {
+		fmt.Fprintf(os.Stderr, "Service %s has more than 1 container", serviceName)
+		return
 	}
+	proj.Passthru("docker", "logs", "-f", containers[0].ID)
 }
