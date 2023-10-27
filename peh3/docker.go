@@ -46,11 +46,11 @@ func (proj *Project) DeleteExitedContainers() {
 func (proj *Project) GetServiceContainerShell(serviceName string) {
 	containers := proj.RunningServiceContainers(serviceName)
 	if len(containers) < 1 {
-		fmt.Fprintf(os.Stderr, "Service %s has no containers", serviceName)
+		fmt.Fprintf(os.Stderr, "Service %s has no containers\n", serviceName)
 		return
 	}
 	if len(containers) > 1 {
-		fmt.Fprintf(os.Stderr, "Service %s has more than 1 container", serviceName)
+		fmt.Fprintf(os.Stderr, "Service %s has more than 1 container\n", serviceName)
 		return
 	}
 	cmd := StdStreamCommand("docker", "exec", "-it", containers[0].ID, "/bin/bash")
@@ -97,11 +97,11 @@ func (proj *Project) StopServiceContainers(serviceName string) {
 func (proj *Project) TailServiceContainer(serviceName string) {
 	containers := proj.RunningServiceContainers(serviceName)
 	if len(containers) < 1 {
-		fmt.Fprintf(os.Stderr, "Service %s has no containers", serviceName)
+		fmt.Fprintf(os.Stderr, "Service %s has no containers\n", serviceName)
 		return
 	}
 	if len(containers) > 1 {
-		fmt.Fprintf(os.Stderr, "Service %s has more than 1 container", serviceName)
+		fmt.Fprintf(os.Stderr, "Service %s has more than 1 container\n", serviceName)
 		return
 	}
 	cmd := StdStreamCommand("docker", "logs", "-f", containers[0].ID)
