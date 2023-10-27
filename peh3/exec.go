@@ -28,6 +28,7 @@ func ReadEnv(envPath string) map[string]string {
 
 func ApplyCmdEnv(cmd *exec.Cmd, envPath string) {
 	env := ReadEnv(envPath)
+	cmd.Env = os.Environ()
 	for k, v := range env {
 		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", k, v))
 	}
