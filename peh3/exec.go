@@ -16,13 +16,18 @@ func StdStreamCommand(name string, args ...string) *exec.Cmd {
 	return cmd
 }
 
-func ApplyCmdEnv(cmd *exec.Cmd, envPath string) {
+func ReadEnv(envPath string) map[string]string {
 	env, err := godotenv.Read(envPath)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%s probably does not exist; please create it from the example file\n\n", envPath)
 		// panic(err)
 		os.Exit(1)
 	}
+	return env
+}
+
+func ApplyCmdEnv(cmd *exec.Cmd, envPath string) {
+	env := ReadEnv(envPath)
 	for k, v := range env {
 		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", k, v))
 	}
