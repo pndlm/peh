@@ -53,7 +53,8 @@ func (proj *Project) GetServiceContainerShell(serviceName string) {
 		fmt.Fprintf(os.Stderr, "Service %s has more than 1 container", serviceName)
 		return
 	}
-	proj.Passthru("docker", "exec", "-it", containers[0].ID, "/bin/bash")
+	cmd := StdStreamCommand("docker", "exec", "-it", containers[0].ID, "/bin/bash")
+	cmd.Run()
 }
 
 func (proj *Project) RunningServiceContainers(serviceName string) []dkrtypes.Container {
@@ -73,11 +74,13 @@ func (proj *Project) RunningServiceContainers(serviceName string) []dkrtypes.Con
 
 // https://github.com/docker/cli/tree/master/cli/command/stack
 func (proj *Project) StackUp(composeFile string) {
-	proj.Passthru("docker", "stack", "up", "-c", composeFile, proj.Name)
+	cmd := StdStreamCommand("docker", "stack", "up", "-c", composeFile, proj.Name)
+	cmd.Run()
 }
 
 func (proj *Project) StackDown() {
-	proj.Passthru("docker", "stack", "down", proj.Name)
+	cmd := StdStreamCommand("docker", "stack", "down", proj.Name)
+	cmd.Run()
 }
 
 func (proj *Project) StopServiceContainers(serviceName string) {
@@ -101,5 +104,6 @@ func (proj *Project) TailServiceContainer(serviceName string) {
 		fmt.Fprintf(os.Stderr, "Service %s has more than 1 container", serviceName)
 		return
 	}
-	proj.Passthru("docker", "logs", "-f", containers[0].ID)
+	cmd := StdStreamCommand("docker", "logs", "-f", containers[0].ID)
+	cmd.Run()
 }

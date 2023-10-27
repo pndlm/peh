@@ -3,7 +3,6 @@ package peh3
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 
 	mobyclient "github.com/moby/moby/client"
@@ -38,18 +37,4 @@ func ProjectAtCwd(name string) *Project {
 		Dir:  projectDir,
 		Name: name,
 	}
-}
-
-func (proj *Project) Passthru(commandName string, args ...string) (cmd *exec.Cmd, exitCode int, err error) {
-	cmd = exec.Command(commandName, args...)
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err = cmd.Run()
-	if err != nil {
-		if exitError, ok := err.(*exec.ExitError); ok {
-			exitCode = exitError.ExitCode()
-		}
-	}
-	return
 }
