@@ -13,3 +13,9 @@ GOPROXY=direct go install github.com/pndlm/peh/helper/peh@latest
 ```bash
 GOPROXY=direct go get github.com/pndlm/peh/peh3
 ```
+
+## Build the helper
+
+```bash
+go build ./helper/peh
+```

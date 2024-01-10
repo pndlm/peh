@@ -43,7 +43,7 @@ func main() {
 		if _, err := os.Stat(shPath); err == nil {
 			// run found peh.sh
 			projectDir = dir
-			cmdName = "peh.sh"
+			cmdName = "./peh.sh"
 			break
 		}
 		dir = filepath.Dir(dir)
