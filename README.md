@@ -28,6 +28,10 @@ GOPROXY=direct go install github.com/pndlm/peh/helper/peh@latest
 
 After a shell restart or reboot, you should now be able to run `peh` at your command-line to see a list of available commands.
 
+## Developing on peh3 library
+
+To develop and test changes to peh3 library alongside of a consuming project, check out this repository next to your active project and review/uncomment the `replace` directive at the bottom of your project's `/peh/src/go.mod` file.
+
 ## TODO
 
 * New project creation instructions
