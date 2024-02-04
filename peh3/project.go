@@ -38,3 +38,9 @@ func ProjectAtCwd(name string) *Project {
 		Name: name,
 	}
 }
+
+// Get an OS-agnostic path relative to the project directory
+// using filepath.FromSlash
+func (proj *Project) RelPath(path string) string {
+	return filepath.Join(proj.Dir, filepath.FromSlash(path))
+}
