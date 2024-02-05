@@ -44,16 +44,8 @@ func (proj *Project) DeleteExitedContainers() {
 }
 
 func (proj *Project) GetServiceContainerShell(serviceName string) {
-	containers := proj.RunningServiceContainers(serviceName)
-	if len(containers) < 1 {
-		fmt.Fprintf(os.Stderr, "Service %s has no containers\n", serviceName)
-		return
-	}
-	if len(containers) > 1 {
-		fmt.Fprintf(os.Stderr, "Service %s has more than 1 container\n", serviceName)
-		return
-	}
-	cmd := StdStreamCommand("docker", "exec", "-it", containers[0].ID, "/bin/bash")
+	container := proj.RunningServiceContainer(serviceName)
+	cmd := StdStreamCommand("docker", "exec", "-it", container.ID, "/bin/bash")
 	cmd.Run()
 }
 
@@ -70,6 +62,19 @@ func (proj *Project) RunningServiceContainers(serviceName string) []dkrtypes.Con
 		}
 	}
 	return matches
+}
+
+func (proj *Project) RunningServiceContainer(serviceName string) dkrtypes.Container {
+	containers := proj.RunningServiceContainers(serviceName)
+	if len(containers) < 1 {
+		fmt.Fprintf(os.Stderr, "Service %s has no containers\n", serviceName)
+		os.Exit(1)
+	}
+	if len(containers) > 1 {
+		fmt.Fprintf(os.Stderr, "Service %s has more than 1 container\n", serviceName)
+		os.Exit(1)
+	}
+	return containers[0]
 }
 
 // https://github.com/docker/cli/tree/master/cli/command/stack
@@ -95,15 +100,7 @@ func (proj *Project) StopServiceContainers(serviceName string) {
 }
 
 func (proj *Project) TailServiceContainer(serviceName string) {
-	containers := proj.RunningServiceContainers(serviceName)
-	if len(containers) < 1 {
-		fmt.Fprintf(os.Stderr, "Service %s has no containers\n", serviceName)
-		return
-	}
-	if len(containers) > 1 {
-		fmt.Fprintf(os.Stderr, "Service %s has more than 1 container\n", serviceName)
-		return
-	}
-	cmd := StdStreamCommand("docker", "logs", "-f", containers[0].ID)
+	container := proj.RunningServiceContainer(serviceName)
+	cmd := StdStreamCommand("docker", "logs", "-f", container.ID)
 	cmd.Run()
 }
