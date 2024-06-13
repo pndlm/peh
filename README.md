@@ -24,20 +24,24 @@ Install the global `peh` helper on your development machine—
 
 ```bash
 GOPROXY=direct go install github.com/pndlm/peh/helper/peh@latest
+
+# If Go isn't already in your path, add it
+# Please interpret for the shell of your choice
+echo 'export PATH=$PATH:/usr/local/go/bin:$HOME/go/bin' >> ~/.bashrc
 ```
 
 After a shell restart or reboot, you should now be able to run `peh` at your command-line to see a list of available commands.
 
 ## Adding peh3 to an existing peh2 project
 
-* Copy a fresh `peh` directory into the project
+* Copy a fresh `peh` directory into the project:
 ```
 cd projectdir
 npx degit pndlm/peh/project-template/peh peh --force
 ```
 * Add `use ./peh/src` to `go.work` file as necessary
 * Grep and replace all instances of `pndlm.com/example-project` with a customized name e.g. `client.com/appname/peh`
-* Install dependencies
+* Install dependencies:
 ```
 cd peh/src
 go get github.com/pndlm/peh/peh3
@@ -48,13 +52,14 @@ go work sync
 
 To develop and test changes to peh3 library alongside of a consuming project, check out this repository next to your active project and review/uncomment the `replace` directive at the bottom of your project's `/peh/src/go.mod` file.
 
-## TODO
+## WIP
 
 * New project creation instructions
 ```bash
 # don't forget to install the latest version of the library....
 GOPROXY=direct go get github.com/pndlm/peh/peh3
 ```
-* Add docker-compose.yaml and README to `project-template`
+* Add `docker-compose.yaml` and `README` to `project-template`
 * Test fully new installation
 * Make creating a new installation a command on `peh` helper itself ?
+* Allow use of both `docker compose` & `docker stack` ?
