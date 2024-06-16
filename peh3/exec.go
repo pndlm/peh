@@ -19,15 +19,27 @@ func StdStreamCommand(name string, args ...string) *exec.Cmd {
 func ReadEnv(envPath string) map[string]string {
 	env, err := godotenv.Read(envPath)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%s probably does not exist; please create it from the example file\n\n", envPath)
+		fmt.Fprintf(os.Stderr, "Env file '%s' is not readable; ensure it has been created from example (see README)\n\n", envPath)
 		// panic(err)
 		os.Exit(1)
 	}
 	return env
 }
 
+func RequireEnv(env map[string]string, keys []string) {
+	for _, key := range keys {
+		if env[key] == "" {
+			fmt.Fprintf(os.Stderr, "Env value '%s' does not exist; see example file and README\n\n", key)
+			os.Exit(1)
+		}
+	}
+}
+
 func ApplyCmdEnv(cmd *exec.Cmd, envPath string) {
-	env := ReadEnv(envPath)
+	ApplyCmdEnvVal(cmd, ReadEnv(envPath))
+}
+
+func ApplyCmdEnvVal(cmd *exec.Cmd, env map[string]string) {
 	cmd.Env = os.Environ()
 	for k, v := range env {
 		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", k, v))
