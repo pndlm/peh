@@ -44,7 +44,7 @@ var generateCmd = &cobra.Command{
 func init() {
 	generateCmd.AddCommand(generateTokenCmd)
 	generateCmd.AddCommand(generateOidCmd)
-	rootCmd.PersistentFlags().IntVarP(&count, "count", "c", 1, "Number of tokens to generate")
-	rootCmd.PersistentFlags().IntVarP(&length, "length", "l", 0, "Length of tokens to generate")
+	generateCmd.PersistentFlags().IntVarP(&count, "count", "c", 1, "Number of tokens to generate")
+	generateCmd.PersistentFlags().IntVarP(&length, "length", "l", 0, "Length of tokens to generate")
 	rootCmd.AddCommand(generateCmd)
 }
