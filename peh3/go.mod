@@ -3,9 +3,9 @@ module github.com/pndlm/peh/peh3
 go 1.21.1
 
 require (
-	github.com/docker/docker v27.0.0+incompatible
+	github.com/docker/docker v26.1.4+incompatible
 	github.com/joho/godotenv v1.5.1
-	github.com/moby/moby v27.0.0+incompatible
+	github.com/moby/moby v26.1.4+incompatible
 	github.com/spf13/cobra v1.8.1
 	gopkg.in/yaml.v3 v3.0.1
 )
