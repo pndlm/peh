@@ -25,7 +25,7 @@ func (proj *Project) DockerClient() *mobyclient.Client {
 func (proj *Project) DeleteExitedContainers() {
 	containers, err := proj.DockerClient().ContainerList(
 		context.TODO(),
-		dkrtypes.ContainerListOptions{
+		dkrcontainertypes.ListOptions{
 			All: true,
 		},
 	)
@@ -35,7 +35,7 @@ func (proj *Project) DeleteExitedContainers() {
 	for _, container := range containers {
 		if container.State == "exited" {
 			fmt.Fprintf(os.Stderr, "Removing %s\n", container.Labels["com.docker.swarm.service.name"])
-			err := proj.DockerClient().ContainerRemove(context.TODO(), container.ID, dkrtypes.ContainerRemoveOptions{})
+			err := proj.DockerClient().ContainerRemove(context.TODO(), container.ID, dkrcontainertypes.RemoveOptions{})
 			if err != nil {
 				panic(err)
 			}
@@ -51,7 +51,7 @@ func (proj *Project) GetServiceContainerShell(serviceName string) {
 
 func (proj *Project) RunningServiceContainers(serviceName string) []dkrtypes.Container {
 	matches := []dkrtypes.Container{}
-	containers, err := proj.DockerClient().ContainerList(context.TODO(), dkrtypes.ContainerListOptions{})
+	containers, err := proj.DockerClient().ContainerList(context.TODO(), dkrcontainertypes.ListOptions{})
 	if err != nil {
 		panic(err)
 	}
