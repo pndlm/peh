@@ -35,6 +35,19 @@ func RequireEnv(env map[string]string, keys []string) {
 	}
 }
 
+func ApplyEnv(envPath string) {
+	ApplyEnvVal(ReadEnv(envPath))
+}
+
+func ApplyEnvVal(env map[string]string) {
+	for k, v := range env {
+		err := os.Setenv(k, v)
+		if err != nil {
+			panic(err)
+		}
+	}
+}
+
 func ApplyCmdEnv(cmd *exec.Cmd, envPath string) {
 	ApplyCmdEnvVal(cmd, ReadEnv(envPath))
 }
