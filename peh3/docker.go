@@ -8,7 +8,7 @@ import (
 
 	dkrtypes "github.com/docker/docker/api/types"
 	dkrcontainertypes "github.com/docker/docker/api/types/container"
-	mobyclient "github.com/moby/moby/client"
+	mobyclient "github.com/docker/docker/client"
 )
 
 func (proj *Project) DockerClient() *mobyclient.Client {

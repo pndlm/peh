@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	mobyclient "github.com/moby/moby/client"
+	mobyclient "github.com/docker/docker/client"
 )
 
 type Project struct {
