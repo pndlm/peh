@@ -6,7 +6,6 @@ import (
 	"os"
 	"strings"
 
-	dkrtypes "github.com/docker/docker/api/types"
 	dkrcontainertypes "github.com/docker/docker/api/types/container"
 	mobyclient "github.com/docker/docker/client"
 )
@@ -49,8 +48,8 @@ func (proj *Project) GetServiceContainerShell(serviceName string) {
 	cmd.Run()
 }
 
-func (proj *Project) RunningServiceContainers(serviceName string) []dkrtypes.Container {
-	matches := []dkrtypes.Container{}
+func (proj *Project) RunningServiceContainers(serviceName string) []dkrcontainertypes.Summary {
+	matches := []dkrcontainertypes.Summary{}
 	containers, err := proj.DockerClient().ContainerList(context.TODO(), dkrcontainertypes.ListOptions{})
 	if err != nil {
 		panic(err)
@@ -64,7 +63,7 @@ func (proj *Project) RunningServiceContainers(serviceName string) []dkrtypes.Con
 	return matches
 }
 
-func (proj *Project) RunningServiceContainer(serviceName string) dkrtypes.Container {
+func (proj *Project) RunningServiceContainer(serviceName string) dkrcontainertypes.Summary {
 	containers := proj.RunningServiceContainers(serviceName)
 	if len(containers) < 1 {
 		fmt.Fprintf(os.Stderr, "Service %s has no containers\n", serviceName)
