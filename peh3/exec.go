@@ -48,13 +48,23 @@ func ApplyEnvVal(env map[string]string) {
 	}
 }
 
-func ApplyCmdEnv(cmd *exec.Cmd, envPath string) {
-	ApplyCmdEnvVal(cmd, ReadEnv(envPath))
+// 20251210 add `override` argument to specify
+// wether or not the env variables in the file provided
+// should override what is already set in the environment;
+// to get previous behavior, set to true
+func ApplyCmdEnv(cmd *exec.Cmd, envPath string, override bool) {
+	ApplyCmdEnvVal(cmd, ReadEnv(envPath), override)
 }
 
-func ApplyCmdEnvVal(cmd *exec.Cmd, env map[string]string) {
+// 20251210 add `override` argument to specify
+// wether or not the env variables provided
+// should override what is already set in the environment;
+// to get previous behavior, set to true
+func ApplyCmdEnvVal(cmd *exec.Cmd, env map[string]string, override bool) {
 	cmd.Env = os.Environ()
 	for k, v := range env {
-		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", k, v))
+		if override || os.Getenv(k) == "" {
+			cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", k, v))
+		}
 	}
 }
