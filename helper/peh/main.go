@@ -20,28 +20,38 @@ func main() {
 	for dir != string(filepath.Separator) {
 		pehDir := filepath.Join(dir, "peh")
 		if s, err := os.Stat(pehDir); err == nil && s.IsDir() {
+			// `peh` directory found
+			// see if a precompiled `bin/peh` binary is available
 			bin := filepath.Join(pehDir, "bin", "peh")
 			if _, err := os.Stat(bin); err == nil {
-				// run found peh bin
 				projectDir = dir
 				cmdName = "peh"
 				break
 			}
-			srcMain := filepath.Join(pehDir, "src", "peh.go")
-			if _, err := os.Stat(srcMain); err == nil {
-				// run found peh source
-				projectDir = dir
-				cmdName = "go"
-				cmdArgs = []string{
-					"run",
-					srcMain,
+			// or, see if there is some go source code in the directory
+			// that we can use; (this is the modern approach)
+			// prefer `main.go` for new projects
+			for _, pehMainCandidate := range []string{
+				filepath.Join(pehDir, "main.go"),
+				filepath.Join(pehDir, "src", "main.go"),
+				// original peh3 template entry
+				filepath.Join(pehDir, "src", "peh.go"),
+			} {
+				if _, err := os.Stat(pehMainCandidate); err == nil {
+					projectDir = dir
+					cmdName = "go"
+					cmdArgs = []string{"run", pehMainCandidate}
+					break
 				}
+			}
+			if projectDir != "" {
 				break
 			}
 		}
 		shPath := filepath.Join(dir, "peh.sh")
 		if _, err := os.Stat(shPath); err == nil {
-			// run found peh.sh
+			// no `peh` directory found, but we do have an old-school
+			// `peh.sh` script file we can use
 			projectDir = dir
 			cmdName = "./peh.sh"
 			break
