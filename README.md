@@ -1,6 +1,6 @@
 # peh3
 
-peh (PNDLM Environment Helper) is a tool by [PNDLM](https://pndlm.com) for building simple, reliable, reusable software development environments based on Docker Stack.
+peh (PNDLM Environment Helper) is a tool by [PNDLM](https://pndlm.com) for building simple, reliable, reusable software development environments based on Docker Compose & Swarm.
 
 Philosophical goals—
 * Minimize pre-requisite installation requirements on dev machines
@@ -16,8 +16,8 @@ Components are—
 ## Setup
 
 Install the base pre-requisites—
-* Docker Desktop — https://docs.docker.com/desktop/install
-	* For Linux, strongly recommend following the [Digital Ocean](https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-on-ubuntu-22-04) instructions for your distribution
+* Mac/Win—  Docker Desktop—  https://docs.docker.com/desktop/install
+* Linux—  Docker Engine—  https://docs.docker.com/engine/install  (for Ubuntu/Debian use apt-based install)
 * Go — https://go.dev/dl
 
 Install the global `peh` helper on your development machine—
@@ -32,19 +32,26 @@ echo 'export PATH=$PATH:/usr/local/go/bin:$HOME/go/bin' >> ~/.bashrc
 
 After a shell restart or reboot, you should now be able to run `peh` at your command-line to see a list of available commands.
 
-## Adding peh3 to an existing peh2 project
+## Adding peh3 to an existing peh2 or other webapp project
 
 * Copy a fresh `peh` directory into the project:
-```
-cd projectdir
+```bash
+cd your-project-directory
+
+# with npm—
 npx degit pndlm/peh/project-template/peh peh --force
+# or with pnpm—
+pnpm dlx degit pndlm/peh/project-template/peh peh --force
+
+# if you have a go.work file—
+go work use peh
 ```
-* Add `use ./peh/src` to `go.work` file as necessary
-* Grep and replace all instances of `pndlm.com/example-project` with a customized name e.g. `client.com/appname/peh`
+* Grep and replace all instances of `pndlm.com/example-project/peh` with a customized name e.g. `client.com/appname/peh`
+* In `peh.go` replace `example-project` with a customized name e.g. `client-app-name`
 * Install dependencies:
 ```
-cd peh/src
-go get github.com/pndlm/peh/peh3
+cd peh
+GOPROXY=direct go get github.com/pndlm/peh/peh3@latest
 go work sync
 ```
 
