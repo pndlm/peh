@@ -8,11 +8,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// The reason to use all this custom stuff with yaml.Node now is because
-// the structs in the official compose-go project
-// https://github.com/compose-spec/compose-go
-// are oddly errant...  weird given that Docker itself is written in go
-
 type Compose struct {
 	Node *yaml.Node
 }

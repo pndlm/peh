@@ -1,40 +1,29 @@
 package peh3
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"strings"
 
-	dkrcontainertypes "github.com/docker/docker/api/types/container"
-	mobyclient "github.com/docker/docker/client"
+	"github.com/pndlm/peh/peh3/docker"
 )
 
-func (proj *Project) DockerClient() *mobyclient.Client {
-	if proj.mobyclient == nil {
-		mcli, err := mobyclient.NewClientWithOpts(mobyclient.FromEnv)
-		if err != nil {
-			panic(err)
-		}
-		proj.mobyclient = mcli
-	}
-	return proj.mobyclient
+func (proj *Project) DockerClient() *docker.Client {
+	return docker.NewClient()
 }
 
 func (proj *Project) DeleteExitedContainers() {
-	containers, err := proj.DockerClient().ContainerList(
-		context.TODO(),
-		dkrcontainertypes.ListOptions{
-			All: true,
-		},
-	)
+	containers, err := proj.DockerClient().ContainerList(docker.ContainerListOptions{
+		All: true,
+	})
 	if err != nil {
 		panic(err)
 	}
 	for _, container := range containers {
-		if container.State == "exited" {
-			fmt.Fprintf(os.Stderr, "Removing %s\n", container.Labels["com.docker.swarm.service.name"])
-			err := proj.DockerClient().ContainerRemove(context.TODO(), container.ID, dkrcontainertypes.RemoveOptions{})
+		name := container.Labels["com.docker.swarm.service.name"]
+		if container.State == "exited" && strings.HasPrefix(name, proj.Name+"_") {
+			fmt.Fprintf(os.Stderr, "Removing %s\n", name)
+			err := proj.DockerClient().ContainerRemove(container.ID)
 			if err != nil {
 				panic(err)
 			}
@@ -48,9 +37,9 @@ func (proj *Project) GetServiceContainerShell(serviceName string) {
 	cmd.Run()
 }
 
-func (proj *Project) RunningServiceContainers(serviceName string) []dkrcontainertypes.Summary {
-	matches := []dkrcontainertypes.Summary{}
-	containers, err := proj.DockerClient().ContainerList(context.TODO(), dkrcontainertypes.ListOptions{})
+func (proj *Project) RunningServiceContainers(serviceName string) []docker.Container {
+	var matches []docker.Container
+	containers, err := proj.DockerClient().ContainerList(docker.ContainerListOptions{})
 	if err != nil {
 		panic(err)
 	}
@@ -63,7 +52,7 @@ func (proj *Project) RunningServiceContainers(serviceName string) []dkrcontainer
 	return matches
 }
 
-func (proj *Project) RunningServiceContainer(serviceName string) dkrcontainertypes.Summary {
+func (proj *Project) RunningServiceContainer(serviceName string) docker.Container {
 	containers := proj.RunningServiceContainers(serviceName)
 	if len(containers) < 1 {
 		fmt.Fprintf(os.Stderr, "Service %s has no containers\n", serviceName)
@@ -91,7 +80,7 @@ func (proj *Project) StopServiceContainers(serviceName string) {
 	containers := proj.RunningServiceContainers(serviceName)
 	for _, container := range containers {
 		fmt.Fprintf(os.Stderr, "Stopping %s\n", container.Labels["com.docker.swarm.service.name"])
-		err := proj.DockerClient().ContainerStop(context.TODO(), container.ID, dkrcontainertypes.StopOptions{})
+		err := proj.DockerClient().ContainerStop(container.ID)
 		if err != nil {
 			panic(err)
 		}

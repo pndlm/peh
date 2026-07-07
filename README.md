@@ -50,7 +50,11 @@ go work sync
 
 ## Developing on peh3 library
 
-To develop and test changes to peh3 library alongside of a consuming project, check out this repository next to your active project and review/uncomment the `replace` directive at the bottom of your project's `/peh/src/go.mod` file.
+To develop and test changes to peh3 library alongside of a consuming project, check out this repository next to your active project and review/uncomment the `replace` directive at the bottom of your project's `/peh/src/go.mod` file, e.g.—
+
+```
+replace github.com/pndlm/peh/peh3 => ../../../peh/peh3
+```
 
 ## WIP
 

@@ -4,14 +4,21 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+)
 
-	mobyclient "github.com/docker/docker/client"
+type ProjectApparatus string
+
+const (
+	ProjectApparatusCompose ProjectApparatus = "compose"
+	// the old peh default, clunkier for dev
+	// but technically better for a quick vm-based deploy
+	ProjectApparatusSwarm ProjectApparatus = "swarm"
 )
 
 type Project struct {
-	Dir        string
-	Name       string
-	mobyclient *mobyclient.Client
+	Dir       string
+	Name      string
+	Apparatus ProjectApparatus
 }
 
 func ProjectAtCwd(name string) *Project {
