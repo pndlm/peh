@@ -12,7 +12,7 @@ import (
 	"github.com/pndlm/peh/peh3/docker"
 )
 
-const testStackComposeFile = `version: '3.8'
+const testComposeFile = `version: '3.8'
 services:
   sleeper:
     image: busybox:latest
@@ -33,6 +33,19 @@ func requireSwarm(t *testing.T) {
 	}
 	if strings.TrimSpace(string(out)) != "active" {
 		t.Skip("docker swarm is not active on this host")
+	}
+}
+
+// requireCompose skips the test unless the docker compose CLI plugin is
+// available, since StackUp/StackDown shell out to the real "docker compose"
+// CLI against whatever daemon is on PATH.
+func requireCompose(t *testing.T) {
+	t.Helper()
+	if testing.Short() {
+		t.Skip("skipping docker integration test in -short mode")
+	}
+	if err := exec.Command("docker", "compose", "version").Run(); err != nil {
+		t.Skipf("docker compose not available: %v", err)
 	}
 }
 
@@ -111,11 +124,11 @@ func TestStackUpAndDown(t *testing.T) {
 	requireSwarm(t)
 
 	composeFile := filepath.Join(t.TempDir(), "docker-compose.yml")
-	if err := os.WriteFile(composeFile, []byte(testStackComposeFile), 0o644); err != nil {
+	if err := os.WriteFile(composeFile, []byte(testComposeFile), 0o644); err != nil {
 		t.Fatalf("write compose file: %v", err)
 	}
 
-	proj := &peh3.Project{Name: "peh3-test-stack"}
+	proj := &peh3.Project{Name: "peh3-test-stack", Apparatus: peh3.ProjectApparatusSwarm}
 
 	// guard against leftover state from a previous interrupted run racing
 	// this one's StackUp (overlay network teardown is asynchronous)
@@ -192,4 +205,94 @@ func TestStackUpAndDown(t *testing.T) {
 	proj.StackDown()
 
 	waitForStackTeardown(t, proj)
+}
+
+// composeProjectExists checks "docker compose ls" directly, mirroring
+// stackExists, since a torn-down project should stop being listed there.
+func composeProjectExists(t *testing.T, projectName string) bool {
+	t.Helper()
+	out, err := exec.Command("docker", "compose", "ls", "-q").Output()
+	if err != nil {
+		t.Fatalf("docker compose ls: %v", err)
+	}
+	for _, name := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+		if name == projectName {
+			return true
+		}
+	}
+	return false
+}
+
+func waitForComposeTeardown(t *testing.T, proj *peh3.Project) {
+	t.Helper()
+	waitUntil(t, 30*time.Second, "compose project and its default network to be removed", func() bool {
+		return !composeProjectExists(t, proj.Name) && !networkExists(t, proj.Name+"_default")
+	})
+}
+
+func TestComposeUpAndDown(t *testing.T) {
+	requireCompose(t)
+
+	composeFile := filepath.Join(t.TempDir(), "docker-compose.yml")
+	if err := os.WriteFile(composeFile, []byte(testComposeFile), 0o644); err != nil {
+		t.Fatalf("write compose file: %v", err)
+	}
+
+	proj := &peh3.Project{Name: "peh3-test-compose", Apparatus: peh3.ProjectApparatusCompose}
+
+	// guard against leftover state from a previous interrupted run racing
+	// this one's StackUp (network teardown is asynchronous)
+	waitForComposeTeardown(t, proj)
+
+	// make sure we don't leave the project behind even if an assertion fails
+	defer func() {
+		proj.StackDown()
+		waitForComposeTeardown(t, proj)
+	}()
+
+	proj.StackUp(composeFile)
+
+	var container docker.Container
+	waitUntil(t, 60*time.Second, "sleeper container to be running", func() bool {
+		containers := proj.RunningServiceContainers("sleeper")
+		if len(containers) != 1 {
+			return false
+		}
+		container = containers[0]
+		return true
+	})
+	if got := container.Labels["com.docker.compose.project"]; got != proj.Name {
+		t.Fatalf("expected compose project label %q, got %q", proj.Name, got)
+	}
+	if got := container.Labels["com.docker.compose.service"]; got != "sleeper" {
+		t.Fatalf("expected compose service label %q, got %q", "sleeper", got)
+	}
+
+	if got := proj.RunningServiceContainer("sleeper"); got.ID != container.ID {
+		t.Fatalf("RunningServiceContainer returned ID %q, expected %q", got.ID, container.ID)
+	}
+
+	if unmatched := proj.RunningServiceContainers("does-not-exist"); len(unmatched) != 0 {
+		t.Fatalf("expected no containers for unmatched service name, got %d", len(unmatched))
+	}
+
+	proj.StopServiceContainers("sleeper")
+
+	// unlike Swarm, plain Compose has no orchestrator reconciling desired
+	// replica count, so a stopped container here just stays stopped rather
+	// than being respawned - only assert it reaches exited.
+	waitUntil(t, 30*time.Second, "stopped container to reach exited state", func() bool {
+		state, exists := containerState(t, container.ID)
+		return exists && state == "exited"
+	})
+
+	proj.DeleteExitedContainers()
+
+	if _, exists := containerState(t, container.ID); exists {
+		t.Fatalf("expected exited container %s to be removed by DeleteExitedContainers", container.ID)
+	}
+
+	proj.StackDown()
+
+	waitForComposeTeardown(t, proj)
 }

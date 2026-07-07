@@ -64,7 +64,7 @@ func (proj *Project) CmdUp() *cobra.Command {
 		Use:   "up",
 		Short: "Bring the stack up",
 		Run: func(cmd *cobra.Command, args []string) {
-			proj.StackUp(filepath.Join("docker", "docker-compose.yaml"))
+			proj.StackUp(proj.RelPath(filepath.Join("docker", "docker-compose.yaml")))
 		},
 	}
 }

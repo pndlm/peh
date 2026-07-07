@@ -3,13 +3,60 @@ package peh3
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"strings"
 
 	"github.com/pndlm/peh/peh3/docker"
 )
 
+const (
+	swarmServiceNameLabel = "com.docker.swarm.service.name"
+	composeProjectLabel   = "com.docker.compose.project"
+	composeServiceLabel   = "com.docker.compose.service"
+)
+
 func (proj *Project) DockerClient() *docker.Client {
 	return docker.NewClient()
+}
+
+// containerBelongsToProject reports whether a container was launched as
+// part of this project's stack/compose deployment.
+func (proj *Project) containerBelongsToProject(container docker.Container) bool {
+	switch proj.Apparatus {
+	case ProjectApparatusCompose:
+		return container.Labels[composeProjectLabel] == proj.Name
+	case ProjectApparatusSwarm:
+		return strings.HasPrefix(container.Labels[swarmServiceNameLabel], proj.Name+"_")
+	default:
+		panic(fmt.Errorf("unsupported apparatus '%s'", proj.Apparatus))
+	}
+}
+
+// containerMatchesService reports whether a container is a running instance
+// of the given service within this project's deployment.
+func (proj *Project) containerMatchesService(container docker.Container, serviceName string) bool {
+	switch proj.Apparatus {
+	case ProjectApparatusCompose:
+		return container.Labels[composeProjectLabel] == proj.Name &&
+			container.Labels[composeServiceLabel] == serviceName
+	case ProjectApparatusSwarm:
+		return strings.HasSuffix(container.Labels[swarmServiceNameLabel], "_"+serviceName)
+	default:
+		panic(fmt.Errorf("unsupported apparatus '%s'", proj.Apparatus))
+	}
+}
+
+// containerServiceLabel returns a human-readable service identifier for
+// log/status output, in whichever form the active apparatus labels it with.
+func (proj *Project) containerServiceLabel(container docker.Container) string {
+	switch proj.Apparatus {
+	case ProjectApparatusCompose:
+		return container.Labels[composeServiceLabel]
+	case ProjectApparatusSwarm:
+		return container.Labels[swarmServiceNameLabel]
+	default:
+		panic(fmt.Errorf("unsupported apparatus '%s'", proj.Apparatus))
+	}
 }
 
 func (proj *Project) DeleteExitedContainers() {
@@ -20,9 +67,8 @@ func (proj *Project) DeleteExitedContainers() {
 		panic(err)
 	}
 	for _, container := range containers {
-		name := container.Labels["com.docker.swarm.service.name"]
-		if container.State == "exited" && strings.HasPrefix(name, proj.Name+"_") {
-			fmt.Fprintf(os.Stderr, "Removing %s\n", name)
+		if container.State == "exited" && proj.containerBelongsToProject(container) {
+			fmt.Fprintf(os.Stderr, "Removing %s\n", proj.containerServiceLabel(container))
 			err := proj.DockerClient().ContainerRemove(container.ID)
 			if err != nil {
 				panic(err)
@@ -44,8 +90,7 @@ func (proj *Project) RunningServiceContainers(serviceName string) []docker.Conta
 		panic(err)
 	}
 	for _, container := range containers {
-		name := container.Labels["com.docker.swarm.service.name"]
-		if strings.HasSuffix(name, "_"+serviceName) {
+		if proj.containerMatchesService(container, serviceName) {
 			matches = append(matches, container)
 		}
 	}
@@ -65,21 +110,44 @@ func (proj *Project) RunningServiceContainer(serviceName string) docker.Containe
 	return containers[0]
 }
 
+// StackUpCmd builds the apparatus-appropriate "bring it up" command without
+// running it, so callers can apply env vars or other tweaks (e.g. via
+// ApplyCmdEnv) before executing it themselves.
+//
 // https://github.com/docker/cli/tree/master/cli/command/stack
+// https://docs.docker.com/reference/cli/docker/compose/up/
+func (proj *Project) StackUpCmd(composeFile string) *exec.Cmd {
+	switch proj.Apparatus {
+	case ProjectApparatusCompose:
+		return StdStreamCommand("docker", "compose", "-p", proj.Name, "-f", composeFile, "up", "-d")
+	case ProjectApparatusSwarm:
+		return StdStreamCommand("docker", "stack", "up", "-c", composeFile, proj.Name)
+	default:
+		panic(fmt.Errorf("unsupported apparatus '%s'", proj.Apparatus))
+	}
+}
+
 func (proj *Project) StackUp(composeFile string) {
-	cmd := StdStreamCommand("docker", "stack", "up", "-c", composeFile, proj.Name)
-	cmd.Run()
+	proj.StackUpCmd(composeFile).Run()
 }
 
 func (proj *Project) StackDown() {
-	cmd := StdStreamCommand("docker", "stack", "down", proj.Name)
-	cmd.Run()
+	switch proj.Apparatus {
+	case ProjectApparatusCompose:
+		cmd := StdStreamCommand("docker", "compose", "-p", proj.Name, "down")
+		cmd.Run()
+	case ProjectApparatusSwarm:
+		cmd := StdStreamCommand("docker", "stack", "down", proj.Name)
+		cmd.Run()
+	default:
+		panic(fmt.Errorf("unsupported apparatus '%s'", proj.Apparatus))
+	}
 }
 
 func (proj *Project) StopServiceContainers(serviceName string) {
 	containers := proj.RunningServiceContainers(serviceName)
 	for _, container := range containers {
-		fmt.Fprintf(os.Stderr, "Stopping %s\n", container.Labels["com.docker.swarm.service.name"])
+		fmt.Fprintf(os.Stderr, "Stopping %s\n", proj.containerServiceLabel(container))
 		err := proj.DockerClient().ContainerStop(container.ID)
 		if err != nil {
 			panic(err)

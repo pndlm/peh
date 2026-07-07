@@ -7,6 +7,7 @@ import (
 
 func main() {
 	proj := peh3.ProjectAtCwd("example-project")
+	proj.Apparatus = peh3.ProjectApparatusCompose
 	cmd.SetProject(proj)
 	cmd.AddNamedCommand("down", proj.CmdDown())
 	cmd.AddNamedCommand("exitedrm", proj.CmdExitedRm())

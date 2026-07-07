@@ -10,9 +10,7 @@ type ProjectApparatus string
 
 const (
 	ProjectApparatusCompose ProjectApparatus = "compose"
-	// the old peh default, clunkier for dev
-	// but technically better for a quick vm-based deploy
-	ProjectApparatusSwarm ProjectApparatus = "swarm"
+	ProjectApparatusSwarm   ProjectApparatus = "swarm"
 )
 
 type Project struct {
@@ -43,6 +41,9 @@ func ProjectAtCwd(name string) *Project {
 	return &Project{
 		Dir:  projectDir,
 		Name: name,
+		// the old peh default, clunkier for dev
+		// but technically better for a quick vm-based deploy
+		Apparatus: ProjectApparatusSwarm,
 	}
 }
 
