@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/pndlm/peh/peh3"
-	"pndlm.com/example-project/cmd"
+	"pndlm.com/example-project/peh/cmd"
 )
 
 func main() {

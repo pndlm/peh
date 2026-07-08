@@ -79,8 +79,16 @@ func (proj *Project) DeleteExitedContainers() {
 
 func (proj *Project) GetServiceContainerShell(serviceName string) {
 	container := proj.RunningServiceContainer(serviceName)
-	cmd := StdStreamCommand("docker", "exec", "-it", container.ID, "/bin/bash")
-	cmd.Run()
+	for _, sh := range []string{"/bin/bash", "/bin/sh"} {
+		rChk := exec.Command("docker", "exec", container.ID, "test", "-x", sh).Run()
+		if rChk != nil && rChk.Error() != "" {
+			continue
+		}
+		cmd := StdStreamCommand("docker", "exec", "-it", container.ID, sh)
+		cmd.Run()
+	}
+	fmt.Fprintf(os.Stderr, "Service %s has no suitable shell", serviceName)
+	os.Exit(1)
 }
 
 func (proj *Project) RunningServiceContainers(serviceName string) []docker.Container {
