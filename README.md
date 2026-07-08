@@ -68,7 +68,7 @@ replace github.com/pndlm/peh/peh3 => ../../../peh/peh3
 * New project creation instructions
 ```bash
 # don't forget to install the latest version of the library....
-GOPROXY=direct go get github.com/pndlm/peh/peh3
+GOPROXY=direct go get github.com/pndlm/peh/peh3@latest
 ```
 * Add `docker-compose.yaml` and `README` to `project-template`
 * Test fully new installation

@@ -4,7 +4,7 @@ go 1.26
 
 require (
 	github.com/igsafe/bwid v1.0.1
-	github.com/pndlm/peh/peh3 v0.0.0-20260707183726-25658604d14d
+	github.com/pndlm/peh/peh3 v0.0.0-20260708014350-2c22a873d7d5
 	github.com/spf13/cobra v1.9.1
 )
 
