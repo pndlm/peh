@@ -14,5 +14,6 @@ func main() {
 	cmd.AddNamedCommand("restart", proj.CmdRestart())
 	cmd.AddNamedCommand("sh", proj.CmdSh())
 	cmd.AddNamedCommand("tail", proj.CmdTail())
+	cmd.AddNamedCommand("wipe", proj.CmdWipe())
 	cmd.Execute()
 }

@@ -59,6 +59,17 @@ func (proj *Project) CmdTail() *cobra.Command {
 	}
 }
 
+func (proj *Project) CmdWipe() *cobra.Command {
+	return &cobra.Command{
+		Use:   "wipe {volumeName}",
+		Short: "Delete a named volume so it gets recreated empty next time the stack comes up",
+		Args:  cobra.ExactArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			proj.DeleteVolume(args[0])
+		},
+	}
+}
+
 func (proj *Project) CmdUp() *cobra.Command {
 	return &cobra.Command{
 		Use:   "up",

@@ -10,9 +10,11 @@ import (
 )
 
 const (
-	swarmServiceNameLabel = "com.docker.swarm.service.name"
-	composeProjectLabel   = "com.docker.compose.project"
-	composeServiceLabel   = "com.docker.compose.service"
+	swarmServiceNameLabel    = "com.docker.swarm.service.name"
+	composeProjectLabel      = "com.docker.compose.project"
+	composeServiceLabel      = "com.docker.compose.service"
+	composeVolumeLabel       = "com.docker.compose.volume"
+	swarmStackNamespaceLabel = "com.docker.stack.namespace"
 )
 
 func (proj *Project) DockerClient() *docker.Client {
@@ -56,6 +58,51 @@ func (proj *Project) containerServiceLabel(container docker.Container) string {
 		return container.Labels[swarmServiceNameLabel]
 	default:
 		panic(fmt.Errorf("unsupported apparatus '%s'", proj.Apparatus))
+	}
+}
+
+// volumeMatchesName reports whether a volume is this project's named volume
+// with the given short name (as declared in the compose file), however the
+// active apparatus happens to name/label it. Compose labels the short name
+// directly; a Swarm stack only labels its namespace and instead bakes the
+// short name into the volume's literal "<stack>_<volume>" name.
+func (proj *Project) volumeMatchesName(volume docker.Volume, name string) bool {
+	switch proj.Apparatus {
+	case ProjectApparatusCompose:
+		return volume.Labels[composeProjectLabel] == proj.Name &&
+			volume.Labels[composeVolumeLabel] == name
+	case ProjectApparatusSwarm:
+		return volume.Labels[swarmStackNamespaceLabel] == proj.Name &&
+			volume.Name == proj.Name+"_"+name
+	default:
+		panic(fmt.Errorf("unsupported apparatus '%s'", proj.Apparatus))
+	}
+}
+
+// DeleteVolume removes this project's named volume (e.g. "db") so that
+// bringing the stack back up recreates it empty. The stack/compose project
+// must already be down: Docker refuses to remove a volume still in use by a
+// container, and that's deliberate here rather than forced, since a
+// force-remove upending a volume that's actually still mounted would be a
+// good way to lose data.
+func (proj *Project) DeleteVolume(name string) {
+	volumes, err := proj.DockerClient().VolumeList()
+	if err != nil {
+		panic(err)
+	}
+	found := false
+	for _, volume := range volumes {
+		if !proj.volumeMatchesName(volume, name) {
+			continue
+		}
+		found = true
+		fmt.Fprintf(os.Stderr, "Removing volume %s\n", volume.Name)
+		if err := proj.DockerClient().VolumeRemove(volume.Name); err != nil {
+			panic(err)
+		}
+	}
+	if !found {
+		fmt.Fprintf(os.Stderr, "Volume %s not found\n", name)
 	}
 }
 

@@ -99,3 +99,42 @@ func (dc *Client) ContainerRemove(id string) error {
 	}
 	return nil
 }
+
+type Volume struct {
+	Name   string            `json:"Name"`
+	Labels map[string]string `json:"Labels"`
+}
+
+type volumeListResponse struct {
+	Volumes []Volume `json:"Volumes"`
+}
+
+func (dc *Client) VolumeList() ([]Volume, error) {
+	req, _ := http.NewRequest("GET", "http://docker/volumes", nil)
+	resp, err := dc.HttpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode >= 300 {
+		return nil, getError(resp)
+	}
+	var result volumeListResponse
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, err
+	}
+	return result.Volumes, nil
+}
+
+func (dc *Client) VolumeRemove(name string) error {
+	req, _ := http.NewRequest("DELETE", "http://docker/volumes/"+name, nil)
+	resp, err := dc.HttpClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode >= 300 {
+		return getError(resp)
+	}
+	return nil
+}
