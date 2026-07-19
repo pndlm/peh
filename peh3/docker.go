@@ -133,6 +133,7 @@ func (proj *Project) GetServiceContainerShell(serviceName string) {
 		}
 		cmd := StdStreamCommand("docker", "exec", "-it", container.ID, sh)
 		cmd.Run()
+		return
 	}
 	fmt.Fprintf(os.Stderr, "Service %s has no suitable shell", serviceName)
 	os.Exit(1)
