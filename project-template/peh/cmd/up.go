@@ -9,9 +9,9 @@ var upCmd = &cobra.Command{
 	Use:   "up",
 	Short: "Bring the stack up",
 	Run: func(cmd *cobra.Command, args []string) {
-		peh3.MustMkdirAll(proj.RelPath("docker/working/letsencrypt"), 0750)
-		cmd2 := proj.StackUpCmd(proj.RelPath("docker/docker-compose.yaml"))
-		peh3.ApplyCmdEnv(cmd2, proj.RelPath("docker/.env"), false)
+		peh3.MustMkdirAll(proj.RelPath("working/api/pkg"), 0755)
+		cmd2 := proj.StackUpCmd(proj.RelPath("docker-compose.yaml"))
+		peh3.ApplyCmdEnv(cmd2, proj.RelPath(".env"), false)
 		cmd2.Run()
 	},
 }

@@ -14,7 +14,7 @@ var mysqlCmd = &cobra.Command{
 			"MYSQL_ROOT_PASSWORD",
 			"MYSQL_DATABASE",
 		})
-		container := proj.RunningServiceContainer("db")
+		container := proj.RunningServiceContainer("mysql")
 		cmd1 := peh3.StdStreamCommand(
 			"docker", "exec", "-it", container.ID,
 			"mysql", "-p"+env["MYSQL_ROOT_PASSWORD"], "-uroot",
